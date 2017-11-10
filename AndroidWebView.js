@@ -216,7 +216,7 @@ class AndroidWebView extends Component {
     mixedContentMode: PropTypes.string,
 
     saveFormDataDisabled: PropTypes.bool,
-    
+
     thirdPartyCookiesEnabled: PropTypes.bool,
   };
 
@@ -311,6 +311,14 @@ class AndroidWebView extends Component {
       this.getWebViewHandle(),
       UIManager.RCTWebView.Commands.stopLoading,
       null,
+    );
+  };
+
+  injectJavaScript = (data) => {
+    UIManager.dispatchViewManagerCommand(
+      this.getWebViewHandle(),
+      UIManager.RCTWebView.Commands.injectJavaScript,
+      [data],
     );
   };
 
