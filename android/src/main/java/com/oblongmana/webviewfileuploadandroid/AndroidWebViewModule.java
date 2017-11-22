@@ -10,30 +10,31 @@ import android.content.ClipData;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
-import android.webkit.ValueCallback;
+import android.support.annotation.NonNull;
+import android.util.Log;
 
 import com.facebook.react.common.annotations.VisibleForTesting;
 
-public class AndroidWebViewModule extends ReactContextBaseJavaModule implements ActivityEventListener {
-    private ValueCallback<Uri> mUploadMessage;
-    private ValueCallback<Uri[]> mUploadCallbackAboveL;
+
+public class AndroidWebViewModule extends ReactContextBaseJavaModule {
+    private ReactApplicationContext reactAppContext;
+    private ActivityEventListener activityEventListener;
+    private AndroidWebViewPackage aPackage;
 
     @VisibleForTesting
     public static final String REACT_CLASS = "AndroidWebViewModule";
 
-    public AndroidWebViewModule(ReactApplicationContext context){
+    public AndroidWebViewModule(ReactApplicationContext context) {
         super(context);
-        context.addActivityEventListener(this);
-    }
-
-    private AndroidWebViewPackage aPackage;
-
-    public void setPackage(AndroidWebViewPackage aPackage) {
-        this.aPackage = aPackage;
+        reactAppContext = context;
     }
 
     public AndroidWebViewPackage getPackage() {
         return this.aPackage;
+    }
+
+    public void setPackage(AndroidWebViewPackage aPackage) {
+        this.aPackage = aPackage;
     }
 
     @Override
@@ -42,57 +43,23 @@ public class AndroidWebViewModule extends ReactContextBaseJavaModule implements 
     }
 
     @SuppressWarnings("unused")
-    public Activity getActivity() {
+    Activity getActivity() {
         return getCurrentActivity();
     }
 
-    public void setUploadMessage(ValueCallback<Uri> uploadMessage) {
-        mUploadMessage = uploadMessage;
-    }
-
-    public void setmUploadCallbackAboveL(ValueCallback<Uri[]> mUploadCallbackAboveL) {
-        this.mUploadCallbackAboveL = mUploadCallbackAboveL;
-    }
-
-    @Override
-    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-        // super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1) {
-            if (null == mUploadMessage && null == mUploadCallbackAboveL){
-                return;
-            }
-            Uri result = data == null || resultCode != Activity.RESULT_OK ? null : data.getData();
-            if (mUploadCallbackAboveL != null) {
-                onActivityResultAboveL(requestCode, resultCode, data);
-            } else if (mUploadMessage != null) {
-                mUploadMessage.onReceiveValue(result);
-                mUploadMessage = null;
-            }
-        }
-    }
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
-    private void onActivityResultAboveL(int requestCode, int resultCode, Intent data) {
-        if (requestCode != 1 || mUploadCallbackAboveL == null) {
+    void setActivityEventListener(ActivityEventListener activityEventListener) {
+        if (reactAppContext == null) {
+            Log.wtf("AndroidWebView", "React application context was deallocated");
             return;
         }
-        Uri[] results = null;
-        if (resultCode == Activity.RESULT_OK) {
-            if (data != null) {
-                String dataString = data.getDataString();
-                ClipData clipData = data.getClipData();
-                if (clipData != null) {
-                    results = new Uri[clipData.getItemCount()];
-                    for (int i = 0; i < clipData.getItemCount(); i++) {
-                        ClipData.Item item = clipData.getItemAt(i);
-                        results[i] = item.getUri();
-                    }
-                }
-                if (dataString != null)
-                    results = new Uri[]{Uri.parse(dataString)};
-            }
+
+        if (this.activityEventListener != null) {
+            reactAppContext.removeActivityEventListener(this.activityEventListener);
         }
-        mUploadCallbackAboveL.onReceiveValue(results);
-        mUploadCallbackAboveL = null;
+
+        if (activityEventListener != null) {
+            reactAppContext.addActivityEventListener(activityEventListener);
+            this.activityEventListener = activityEventListener;
+        }
     }
-    public void onNewIntent(Intent intent) {}
 }

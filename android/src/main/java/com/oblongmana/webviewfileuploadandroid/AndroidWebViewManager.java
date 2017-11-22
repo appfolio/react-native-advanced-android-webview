@@ -1,8 +1,15 @@
 package com.oblongmana.webviewfileuploadandroid;
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.Build;
+import android.os.Parcelable;
+import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 import android.util.Log;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
@@ -10,33 +17,83 @@ import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 
-
-import com.facebook.react.uimanager.annotations.ReactProp;
+import com.facebook.react.bridge.BaseActivityEventListener;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.views.webview.ReactWebViewManager;
-import com.oblongmana.webviewfileuploadandroid.AndroidWebViewModule;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+import static android.provider.MediaStore.Images.Media.*;
+
 
 public class AndroidWebViewManager extends ReactWebViewManager {
 
-    private Activity mActivity = null;
+    private static final int PICK_IMAGE = 1;
+
     private AndroidWebViewPackage aPackage;
+
+
+    private static Uri getTemporaryPhotoFile(Context context) {
+        File photoFile = new File(context.getExternalCacheDir(), "cookies");
+        photoFile.getParentFile().mkdirs();
+
+        Uri photoOutputUri;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
+            photoOutputUri = Uri.fromFile(photoFile);
+        } else {
+            String authority = context.getPackageName() + ".provider";
+            photoOutputUri = FileProvider.getUriForFile(context, authority, photoFile);
+        }
+
+        return photoOutputUri;
+    }
+
+    private static Intent createChooserIntent(Context context) {
+        List<Intent> intentList = new ArrayList<>();
+
+        Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        takePhotoIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, getTemporaryPhotoFile(context));
+        intentList = addIntentsToList(context, intentList, takePhotoIntent);
+
+        Intent pickIntent = new Intent(Intent.ACTION_PICK, EXTERNAL_CONTENT_URI);
+        intentList = addIntentsToList(context, intentList, pickIntent);
+
+        Intent chooserIntent = null;
+        if (intentList.size() > 0) {
+            chooserIntent = Intent.createChooser(intentList.remove(intentList.size() - 1), null);
+            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toArray(new Parcelable[]{}));
+        }
+
+        return chooserIntent;
+    }
+
+    private static List<Intent> addIntentsToList(Context context, List<Intent> list, Intent intent) {
+        List<ResolveInfo> resInfo = context.getPackageManager().queryIntentActivities(intent, 0);
+
+        for (ResolveInfo resolveInfo : resInfo) {
+            String packageName = resolveInfo.activityInfo.packageName;
+            Intent targetedIntent = new Intent(intent);
+            targetedIntent.setPackage(packageName);
+            list.add(targetedIntent);
+        }
+
+        return list;
+    }
+
     public String getName() {
         return "AndroidWebView";
     }
 
+
     @Override
     protected WebView createViewInstance(ThemedReactContext reactContext) {
         WebView view = super.createViewInstance(reactContext);
-        //Now do our own setWebChromeClient, patching in file chooser support
+
         final AndroidWebViewModule module = this.aPackage.getModule();
         view.setWebChromeClient(new WebChromeClient(){
-
-            public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType) {
-                module.setUploadMessage(uploadMsg);
-                openFileChooserView();
-
-            }
-
             public boolean onJsConfirm (WebView view, String url, String message, JsResult result){
                 return true;
             }
@@ -45,38 +102,62 @@ public class AndroidWebViewManager extends ReactWebViewManager {
                 return true;
             }
 
-            // For Android < 3.0
-            public void openFileChooser(ValueCallback<Uri> uploadMsg) {
-                module.setUploadMessage(uploadMsg);
-                openFileChooserView();
-            }
+            public boolean onShowFileChooser(WebView webView, final ValueCallback<Uri[]> fileUriCallback, WebChromeClient.FileChooserParams fileChooserParams) {
+                Log.d("AndroidWebView", "onShowFileChooser: Web page requested file chooser");
 
-            // For Android  > 4.1.1
-            public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture) {
-                module.setUploadMessage(uploadMsg);
-                openFileChooserView();
-            }
+                module.setActivityEventListener(new BaseActivityEventListener() {
+                    @Override
+                    public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
+                        module.setActivityEventListener(null);
 
-            // For Android > 5.0
-            public boolean onShowFileChooser (WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
-                Log.d("customwebview", "onShowFileChooser");
+                        if (resultCode != Activity.RESULT_OK) {
+                            return;
+                        }
 
-                module.setmUploadCallbackAboveL(filePathCallback);
-                openFileChooserView();
+                        switch (requestCode) {
+                            case PICK_IMAGE:
+                                Uri[] results;
+                                if (data == null || data.getDataString() == null && data.getClipData() == null) {
+                                    // image from camera
+                                    results = new Uri[]{ getTemporaryPhotoFile(activity) };
+                                } else {
+                                    String dataString = data.getDataString();
+                                    ClipData clipData = data.getClipData();
+
+                                    // image from gallery
+                                    if (clipData != null) {
+                                        results = new Uri[clipData.getItemCount()];
+
+                                        for (int i = 0; i < clipData.getItemCount(); i++) {
+                                            ClipData.Item item = clipData.getItemAt(i);
+                                            results[i] = item.getUri();
+                                        }
+                                    } else {
+                                        results = new Uri[]{ Uri.parse(dataString) };
+                                    }
+                                }
+
+                                fileUriCallback.onReceiveValue(results);
+                                break;
+
+                            default:
+                                Log.w("AndroidWebView", String.format("onActivityResult: unhandled request code %d", requestCode));
+                        }
+                    }
+                });
+
+                try {
+                    Context context = module.getActivity().getApplicationContext();
+                    Intent chooserIntent = createChooserIntent(context);
+                    module.getActivity().startActivityForResult(chooserIntent, PICK_IMAGE);
+                } catch (Exception e) {
+                    Log.e("AndroidWebView", e.toString());
+                }
+
                 return true;
             }
-
-            private void openFileChooserView(){
-                try {
-                    final Intent galleryIntent = new Intent(Intent.ACTION_PICK);
-                    galleryIntent.setType("image/*");
-                    final Intent chooserIntent = Intent.createChooser(galleryIntent, "Choose File");
-                    module.getActivity().startActivityForResult(chooserIntent, 1);
-                } catch (Exception e) {
-                    Log.d("customwebview", e.toString());
-                }
-            }
         });
+
         return view;
     }
 
