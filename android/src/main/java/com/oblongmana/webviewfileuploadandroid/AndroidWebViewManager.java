@@ -24,6 +24,9 @@ import com.facebook.react.views.webview.ReactWebViewManager;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Calendar;
 
 import static android.provider.MediaStore.Images.Media.*;
 
@@ -34,9 +37,13 @@ public class AndroidWebViewManager extends ReactWebViewManager {
 
     private AndroidWebViewPackage aPackage;
 
-
     private static Uri getTemporaryPhotoFile(Context context) {
-        File photoFile = new File(context.getExternalCacheDir(), "cookies");
+        Date today = Calendar.getInstance().getTime();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmm");
+        String timeStamp = dateFormat.format(today).toString();
+
+        // HACK: Adding 01 as seconds, due to SimpleDateFormat failed to parse seconds.
+        File photoFile = new File(context.getExternalCacheDir(), "IMG_" + timeStamp + "01.jpg");
         photoFile.getParentFile().mkdirs();
 
         Uri photoOutputUri;
