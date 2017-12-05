@@ -118,6 +118,7 @@ public class AndroidWebViewManager extends ReactWebViewManager {
                         module.setActivityEventListener(null);
 
                         if (resultCode != Activity.RESULT_OK) {
+                            fileUriCallback.onReceiveValue(null);
                             return;
                         }
 
