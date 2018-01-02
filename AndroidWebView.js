@@ -8,10 +8,7 @@
  *
  * @providesModule AndroidWebView
  */
-import React, {
-  Component,
-  PropTypes,
-} from 'react';
+import React, { Component } from 'react';
 import ReactNative, {
   EdgeInsetsPropType,
   ActivityIndicator,
@@ -20,6 +17,8 @@ import ReactNative, {
   View,
   requireNativeComponent,
 } from 'react-native';
+
+import PropTypes from 'prop-types';
 import warning from 'warning';
 import keyMirror from 'keymirror';
 import resolveAssetSource from 'react-native/Libraries/Image/resolveAssetSource';
@@ -218,6 +217,8 @@ class AndroidWebView extends Component {
     saveFormDataDisabled: PropTypes.bool,
 
     thirdPartyCookiesEnabled: PropTypes.bool,
+
+    urlPrefixesForDefaultIntent: PropTypes.arrayOf(PropTypes.string),
   };
 
   static defaultProps = {
@@ -269,7 +270,7 @@ class AndroidWebView extends Component {
   onMessage = (event: Event) => {
     const { onMessage } = this.props;
     onMessage && onMessage(event);
-  }
+  };
 
   getWebViewHandle = () => ReactNative.findNodeHandle(this[RCT_WEBVIEW_REF]);
 
@@ -365,6 +366,10 @@ class AndroidWebView extends Component {
       console.warn('WebView: `source.headers` is not supported when using POST.');
     } else if (source.method === 'GET' && source.body) {
       console.warn('WebView: `source.body` is not supported when using GET.');
+    }
+
+    if (this.props.urlPrefixesForDefaultIntent != null) {
+      console.warn('WebView: `urlPrefixesForDefaultIntent` is not supported');
     }
 
     const webView = (
