@@ -61,7 +61,7 @@ library.
 
 ## Requirements
 This has been tested with (and has a peerDependency in package.json on
-`react-native` `^0.40.0`). It _might_ work with earlier versions. If it does,
+`react-native` `>=0.51.0`). It _might_ work with earlier versions. If it does,
 please feel free to open a PR amending the peerDependencies in package.json.
 
 ## Installation
