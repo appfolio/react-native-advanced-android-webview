@@ -67,7 +67,7 @@ please feel free to open a PR amending the peerDependencies in package.json.
 ## Installation
 
 Install the library into your project
-`npm i react-android-native-webview --save`
+`npm i react-native-advanced-android-webview --save`
 
 ### Manual Linking
 
