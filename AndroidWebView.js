@@ -406,7 +406,7 @@ class AndroidWebView extends Component {
   }
 }
 
-const WebViewForAndroid = requireNativeComponent('AndroidWebView', AndroidWebView, {
+const WebViewForAndroid = requireNativeComponent('AEAdvancedAndroidWebView', AndroidWebView, {
   nativeOnly: {
     messagingEnabled: PropTypes.bool,
   },

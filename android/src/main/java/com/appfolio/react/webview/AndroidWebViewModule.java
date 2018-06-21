@@ -1,4 +1,4 @@
-package com.oblongmana.webviewfileuploadandroid;
+package com.appfolio.react.webview;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
@@ -22,7 +22,7 @@ public class AndroidWebViewModule extends ReactContextBaseJavaModule {
     private AndroidWebViewPackage aPackage;
 
     @VisibleForTesting
-    public static final String REACT_CLASS = "AndroidWebViewModule";
+    public static final String REACT_CLASS = "AEAdvancedAndroidWebViewModule";
 
     public AndroidWebViewModule(ReactApplicationContext context) {
         super(context);

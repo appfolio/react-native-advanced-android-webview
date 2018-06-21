@@ -97,7 +97,7 @@ Add the library's React Package to your `MainApplication.java` (location will
 differ from project to project):
 ```diff
  //...
-+import com.oblongmana.webviewfileuploadandroid.AndroidWebViewPackage;
++import com.appfolio.react.webview.AndroidWebViewPackage;
 
  //...
 

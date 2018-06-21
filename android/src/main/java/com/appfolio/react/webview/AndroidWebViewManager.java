@@ -1,4 +1,4 @@
-package com.oblongmana.webviewfileuploadandroid;
+package com.appfolio.react.webview;
 
 import android.app.Activity;
 import android.content.ClipData;
@@ -91,7 +91,7 @@ public class AndroidWebViewManager extends ReactWebViewManager {
     }
 
     public String getName() {
-        return "AndroidWebView";
+        return "AEAdvancedAndroidWebView";
     }
 
 
