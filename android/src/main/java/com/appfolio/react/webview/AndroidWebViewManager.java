@@ -10,8 +10,6 @@ import android.os.Build;
 import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.util.Log;
-import android.webkit.JsPromptResult;
-import android.webkit.JsResult;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
@@ -95,14 +93,6 @@ public class AndroidWebViewManager extends ReactWebViewManager {
 
         final AndroidWebViewModule module = this.aPackage.getModule();
         view.setWebChromeClient(new WebChromeClient() {
-            public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
-                return true;
-            }
-
-            public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
-                return true;
-            }
-
             public boolean onShowFileChooser(WebView webView, final ValueCallback<Uri[]> fileUriCallback, WebChromeClient.FileChooserParams fileChooserParams) {
                 Log.d("AndroidWebView", "onShowFileChooser: Web page requested file chooser");
 
