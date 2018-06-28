@@ -9,7 +9,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Parcelable;
 import android.provider.MediaStore;
-import android.support.v4.content.FileProvider;
 import android.util.Log;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
@@ -47,8 +46,7 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             photoOutputUri = Uri.fromFile(photoFile);
         } else {
-            String authority = context.getPackageName() + ".provider";
-            photoOutputUri = FileProvider.getUriForFile(context, authority, photoFile);
+            photoOutputUri = WebViewFileProvider.getUriForFile(context, photoFile);
         }
 
         return photoOutputUri;
