@@ -36,11 +36,10 @@ public class AndroidWebViewManager extends ReactWebViewManager {
 
     private static Uri getTemporaryPhotoFile(Context context) {
         Date today = Calendar.getInstance().getTime();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmm");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
         String timeStamp = dateFormat.format(today).toString();
 
-        // HACK: Adding 01 as seconds, due to SimpleDateFormat failed to parse seconds.
-        File photoFile = new File(context.getExternalCacheDir(), "IMG_" + timeStamp + "01.jpg");
+        File photoFile = new File(context.getExternalCacheDir(), "IMG_" + timeStamp + ".jpg");
         photoFile.getParentFile().mkdirs();
 
         Uri photoOutputUri;
