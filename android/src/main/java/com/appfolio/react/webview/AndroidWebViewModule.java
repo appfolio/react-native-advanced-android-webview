@@ -38,7 +38,7 @@ public class AndroidWebViewModule extends ReactContextBaseJavaModule {
     }
 
     @Override
-    public String getName(){
+    public String getName() {
         return REACT_CLASS;
     }
 

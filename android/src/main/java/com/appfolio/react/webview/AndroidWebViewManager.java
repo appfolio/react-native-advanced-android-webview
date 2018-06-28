@@ -30,11 +30,8 @@ import java.util.Calendar;
 
 import static android.provider.MediaStore.Images.Media.*;
 
-
 public class AndroidWebViewManager extends ReactWebViewManager {
-
     private static final int PICK_IMAGE = 1;
-
     private AndroidWebViewPackage aPackage;
 
     private static Uri getTemporaryPhotoFile(Context context) {
@@ -94,18 +91,17 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         return "AEAdvancedAndroidWebView";
     }
 
-
     @Override
     protected WebView createViewInstance(ThemedReactContext reactContext) {
         WebView view = super.createViewInstance(reactContext);
 
         final AndroidWebViewModule module = this.aPackage.getModule();
-        view.setWebChromeClient(new WebChromeClient(){
-            public boolean onJsConfirm (WebView view, String url, String message, JsResult result){
+        view.setWebChromeClient(new WebChromeClient() {
+            public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
                 return true;
             }
 
-            public boolean onJsPrompt (WebView view, String url, String message, String defaultValue, JsPromptResult result){
+            public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
                 return true;
             }
 
@@ -169,11 +165,11 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         return view;
     }
 
-    public void setPackage(AndroidWebViewPackage aPackage){
+    public void setPackage(AndroidWebViewPackage aPackage) {
         this.aPackage = aPackage;
     }
 
-    public AndroidWebViewPackage getPackage(){
+    public AndroidWebViewPackage getPackage() {
         return this.aPackage;
     }
 }
