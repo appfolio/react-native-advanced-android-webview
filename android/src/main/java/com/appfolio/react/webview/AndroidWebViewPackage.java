@@ -1,4 +1,4 @@
-package com.oblongmana.webviewfileuploadandroid;
+package com.appfolio.react.webview;
 
 import com.facebook.react.ReactPackage;
 import com.facebook.react.bridge.NativeModule;

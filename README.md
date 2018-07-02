@@ -61,13 +61,13 @@ library.
 
 ## Requirements
 This has been tested with (and has a peerDependency in package.json on
-`react-native` `^0.40.0`). It _might_ work with earlier versions. If it does,
+`react-native` `>=0.51.0`). It _might_ work with earlier versions. If it does,
 please feel free to open a PR amending the peerDependencies in package.json.
 
 ## Installation
 
 Install the library into your project
-`npm i react-android-native-webview --save`
+`npm i react-native-advanced-android-webview --save`
 
 ### Manual Linking
 
@@ -97,7 +97,7 @@ Add the library's React Package to your `MainApplication.java` (location will
 differ from project to project):
 ```diff
  //...
-+import com.oblongmana.webviewfileuploadandroid.AndroidWebViewPackage;
++import com.appfolio.react.webview.AndroidWebViewPackage;
 
  //...
 

@@ -1,21 +1,41 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven {
+            url 'https://maven.google.com/'
+            name 'Google'
+        }
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:2.2.3'
+    }
+}
+
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 23
+    compileSdkVersion 24
     buildToolsVersion "23.0.1"
 
     defaultConfig {
-        minSdkVersion 16
-        targetSdkVersion 22
-        versionCode 3
-        versionName "0.3.0"
-        ndk {
-            abiFilters "armeabi-v7a", "x86"
-        }
+        minSdkVersion 21
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+    }
+}
+
+repositories {
+    maven {
+        url 'https://maven.google.com/'
+        name 'Google'
     }
 }
 
 dependencies {
-    compile "com.android.support:appcompat-v7:23.0.1" //Remove??
-    compile "com.facebook.react:react-native:+"  // From node_modules
+    compile "com.android.support:support-v4:23.0.1"
+
+    //noinspection GradleDynamicVersion
+    compile "com.facebook.react:react-native:+"
 }
