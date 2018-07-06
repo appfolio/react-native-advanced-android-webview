@@ -104,7 +104,7 @@ public class AndroidWebViewManager extends ReactWebViewManager {
             public boolean onShowFileChooser(WebView webView, final ValueCallback<Uri[]> fileUriCallback, WebChromeClient.FileChooserParams fileChooserParams) {
                 Log.d("AndroidWebView", "onShowFileChooser: Web page requested file chooser");
 
-                moduleReactContext.addActivityEventListener(new BaseActivityEventListener() {
+                final BaseActivityEventListener listener = new BaseActivityEventListener() {
                     @Override
                     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
                         moduleReactContext.removeActivityEventListener(this);
@@ -144,7 +144,9 @@ public class AndroidWebViewManager extends ReactWebViewManager {
                                 Log.w("AndroidWebView", String.format("onActivityResult: unhandled request code %d", requestCode));
                         }
                     }
-                });
+                };
+
+                moduleReactContext.addActivityEventListener(listener);
 
                 try {
                     Context context = reactContext.getCurrentActivity().getApplicationContext();
@@ -152,6 +154,8 @@ public class AndroidWebViewManager extends ReactWebViewManager {
                     reactContext.getCurrentActivity().startActivityForResult(chooserIntent, PICK_IMAGE);
                 } catch (Exception e) {
                     Log.e("AndroidWebView", e.toString());
+                    moduleReactContext.removeActivityEventListener(listener);
+                    fileUriCallback.onReceiveValue(null);
                 }
 
                 return true;
