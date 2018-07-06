@@ -15,6 +15,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 
 import com.facebook.react.bridge.BaseActivityEventListener;
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.views.webview.ReactWebViewManager;
 
@@ -29,8 +30,9 @@ import java.util.Locale;
 import static android.provider.MediaStore.Images.Media.*;
 
 public class AndroidWebViewManager extends ReactWebViewManager {
+    protected static final String REACT_CLASS = "AEAdvancedAndroidWebView";
+
     private static final int PICK_IMAGE = 1;
-    private AndroidWebViewPackage aPackage;
 
     private static Uri getTemporaryPhotoFile(Context context) {
         Date today = Calendar.getInstance().getTime();
@@ -83,23 +85,29 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         return list;
     }
 
+    @Override
     public String getName() {
-        return "AEAdvancedAndroidWebView";
+        return REACT_CLASS;
     }
 
     @Override
-    protected WebView createViewInstance(ThemedReactContext reactContext) {
+    protected WebView createViewInstance(final ThemedReactContext reactContext) {
         WebView view = super.createViewInstance(reactContext);
 
-        final AndroidWebViewModule module = this.aPackage.getModule();
+        // HACK: there seems to be a bug with reloading react-native that causes a view manager to not get
+        // constructed, which means the ReactApplicationContext goes stale
+        // modules, however, do get constructed again with a fresh ReactApplicationContext
+        // also, ThemedReactContext does not receive activity events
+        final ReactContext moduleReactContext = reactContext.getNativeModule(AndroidWebViewModule.class).getReactContext();
+
         view.setWebChromeClient(new WebChromeClient() {
             public boolean onShowFileChooser(WebView webView, final ValueCallback<Uri[]> fileUriCallback, WebChromeClient.FileChooserParams fileChooserParams) {
                 Log.d("AndroidWebView", "onShowFileChooser: Web page requested file chooser");
 
-                module.setActivityEventListener(new BaseActivityEventListener() {
+                moduleReactContext.addActivityEventListener(new BaseActivityEventListener() {
                     @Override
                     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-                        module.setActivityEventListener(null);
+                        moduleReactContext.removeActivityEventListener(this);
 
                         if (resultCode != Activity.RESULT_OK) {
                             fileUriCallback.onReceiveValue(null);
@@ -139,9 +147,9 @@ public class AndroidWebViewManager extends ReactWebViewManager {
                 });
 
                 try {
-                    Context context = module.getActivity().getApplicationContext();
+                    Context context = reactContext.getCurrentActivity().getApplicationContext();
                     Intent chooserIntent = createChooserIntent(context);
-                    module.getActivity().startActivityForResult(chooserIntent, PICK_IMAGE);
+                    reactContext.getCurrentActivity().startActivityForResult(chooserIntent, PICK_IMAGE);
                 } catch (Exception e) {
                     Log.e("AndroidWebView", e.toString());
                 }
@@ -151,13 +159,5 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         });
 
         return view;
-    }
-
-    public void setPackage(AndroidWebViewPackage aPackage) {
-        this.aPackage = aPackage;
-    }
-
-    public AndroidWebViewPackage getPackage() {
-        return this.aPackage;
     }
 }
