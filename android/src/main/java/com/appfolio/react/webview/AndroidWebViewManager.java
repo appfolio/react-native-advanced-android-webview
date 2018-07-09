@@ -27,8 +27,6 @@ import java.util.Date;
 import java.util.Calendar;
 import java.util.Locale;
 
-import static android.provider.MediaStore.Images.Media.*;
-
 public class AndroidWebViewManager extends ReactWebViewManager {
     protected static final String REACT_CLASS = "AEAdvancedAndroidWebView";
 
@@ -52,7 +50,8 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         return photoOutputUri;
     }
 
-    private static Intent createChooserIntent(Context context) {
+    private static Intent createChooserIntent(Context context, boolean allowMultiple) {
+        // HACK: hardcoded to images
         List<Intent> intentList = new ArrayList<>();
 
         Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -60,8 +59,16 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, getTemporaryPhotoFile(context));
         intentList = addIntentsToList(context, intentList, takePhotoIntent);
 
-        Intent pickIntent = new Intent(Intent.ACTION_PICK, EXTERNAL_CONTENT_URI);
-        intentList = addIntentsToList(context, intentList, pickIntent);
+        Intent pickIntent = new Intent(Intent.ACTION_GET_CONTENT);
+        pickIntent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        if (allowMultiple) {
+            pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        }
+
+        pickIntent.setType("image/*");
+
+        intentList.add(pickIntent);
 
         Intent chooserIntent = null;
         if (intentList.size() > 0) {
@@ -149,8 +156,10 @@ public class AndroidWebViewManager extends ReactWebViewManager {
                 moduleReactContext.addActivityEventListener(listener);
 
                 try {
+                    final boolean allowMultiple = fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
+
                     Context context = reactContext.getCurrentActivity().getApplicationContext();
-                    Intent chooserIntent = createChooserIntent(context);
+                    Intent chooserIntent = createChooserIntent(context, allowMultiple);
                     reactContext.getCurrentActivity().startActivityForResult(chooserIntent, PICK_IMAGE);
                 } catch (Exception e) {
                     Log.e("AndroidWebView", e.toString());
