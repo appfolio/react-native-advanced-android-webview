@@ -24,6 +24,7 @@ import java.util.List;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Calendar;
+import java.util.Locale;
 
 import static android.provider.MediaStore.Images.Media.*;
 
@@ -33,11 +34,10 @@ public class AndroidWebViewManager extends ReactWebViewManager {
 
     private static Uri getTemporaryPhotoFile(Context context) {
         Date today = Calendar.getInstance().getTime();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmm");
-        String timeStamp = dateFormat.format(today).toString();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US);
+        String timeStamp = dateFormat.format(today);
 
-        // HACK: Adding 01 as seconds, due to SimpleDateFormat failed to parse seconds.
-        File photoFile = new File(context.getExternalCacheDir(), "IMG_" + timeStamp + "01.jpg");
+        File photoFile = new File(context.getExternalCacheDir(), "IMG_" + timeStamp + ".jpg");
         photoFile.getParentFile().mkdirs();
 
         Uri photoOutputUri;
