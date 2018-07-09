@@ -15,6 +15,7 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 
 import com.facebook.react.bridge.BaseActivityEventListener;
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.views.webview.ReactWebViewManager;
 
@@ -26,11 +27,10 @@ import java.util.Date;
 import java.util.Calendar;
 import java.util.Locale;
 
-import static android.provider.MediaStore.Images.Media.*;
-
 public class AndroidWebViewManager extends ReactWebViewManager {
+    protected static final String REACT_CLASS = "AEAdvancedAndroidWebView";
+
     private static final int PICK_IMAGE = 1;
-    private AndroidWebViewPackage aPackage;
 
     private static Uri getTemporaryPhotoFile(Context context) {
         Date today = Calendar.getInstance().getTime();
@@ -50,7 +50,8 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         return photoOutputUri;
     }
 
-    private static Intent createChooserIntent(Context context) {
+    private static Intent createChooserIntent(Context context, boolean allowMultiple) {
+        // HACK: hardcoded to images
         List<Intent> intentList = new ArrayList<>();
 
         Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -58,12 +59,20 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, getTemporaryPhotoFile(context));
         intentList = addIntentsToList(context, intentList, takePhotoIntent);
 
-        Intent pickIntent = new Intent(Intent.ACTION_PICK, EXTERNAL_CONTENT_URI);
-        intentList = addIntentsToList(context, intentList, pickIntent);
+        Intent pickIntent = new Intent(Intent.ACTION_GET_CONTENT);
+        pickIntent.addCategory(Intent.CATEGORY_OPENABLE);
+
+        if (allowMultiple) {
+            pickIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        }
+
+        pickIntent.setType("image/*");
+
+        intentList.add(pickIntent);
 
         Intent chooserIntent = null;
         if (intentList.size() > 0) {
-            chooserIntent = Intent.createChooser(intentList.remove(intentList.size() - 1), null);
+            chooserIntent = Intent.createChooser(intentList.remove(intentList.size() - 1), "Choose a file");
             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toArray(new Parcelable[]{}));
         }
 
@@ -83,23 +92,29 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         return list;
     }
 
+    @Override
     public String getName() {
-        return "AEAdvancedAndroidWebView";
+        return REACT_CLASS;
     }
 
     @Override
-    protected WebView createViewInstance(ThemedReactContext reactContext) {
+    protected WebView createViewInstance(final ThemedReactContext reactContext) {
         WebView view = super.createViewInstance(reactContext);
 
-        final AndroidWebViewModule module = this.aPackage.getModule();
+        // HACK: there seems to be a bug with reloading react-native that causes a view manager to not get
+        // constructed, which means the ReactApplicationContext goes stale
+        // modules, however, do get constructed again with a fresh ReactApplicationContext
+        // also, ThemedReactContext does not receive activity events
+        final ReactContext moduleReactContext = reactContext.getNativeModule(AndroidWebViewModule.class).getReactContext();
+
         view.setWebChromeClient(new WebChromeClient() {
             public boolean onShowFileChooser(WebView webView, final ValueCallback<Uri[]> fileUriCallback, WebChromeClient.FileChooserParams fileChooserParams) {
                 Log.d("AndroidWebView", "onShowFileChooser: Web page requested file chooser");
 
-                module.setActivityEventListener(new BaseActivityEventListener() {
+                final BaseActivityEventListener listener = new BaseActivityEventListener() {
                     @Override
                     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
-                        module.setActivityEventListener(null);
+                        moduleReactContext.removeActivityEventListener(this);
 
                         if (resultCode != Activity.RESULT_OK) {
                             fileUriCallback.onReceiveValue(null);
@@ -136,14 +151,20 @@ public class AndroidWebViewManager extends ReactWebViewManager {
                                 Log.w("AndroidWebView", String.format("onActivityResult: unhandled request code %d", requestCode));
                         }
                     }
-                });
+                };
+
+                moduleReactContext.addActivityEventListener(listener);
 
                 try {
-                    Context context = module.getActivity().getApplicationContext();
-                    Intent chooserIntent = createChooserIntent(context);
-                    module.getActivity().startActivityForResult(chooserIntent, PICK_IMAGE);
+                    final boolean allowMultiple = fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
+
+                    Context context = reactContext.getCurrentActivity().getApplicationContext();
+                    Intent chooserIntent = createChooserIntent(context, allowMultiple);
+                    reactContext.getCurrentActivity().startActivityForResult(chooserIntent, PICK_IMAGE);
                 } catch (Exception e) {
                     Log.e("AndroidWebView", e.toString());
+                    moduleReactContext.removeActivityEventListener(listener);
+                    fileUriCallback.onReceiveValue(null);
                 }
 
                 return true;
@@ -151,13 +172,5 @@ public class AndroidWebViewManager extends ReactWebViewManager {
         });
 
         return view;
-    }
-
-    public void setPackage(AndroidWebViewPackage aPackage) {
-        this.aPackage = aPackage;
-    }
-
-    public AndroidWebViewPackage getPackage() {
-        return this.aPackage;
     }
 }
