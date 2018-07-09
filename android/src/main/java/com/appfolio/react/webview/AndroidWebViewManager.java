@@ -72,7 +72,7 @@ public class AndroidWebViewManager extends ReactWebViewManager {
 
         Intent chooserIntent = null;
         if (intentList.size() > 0) {
-            chooserIntent = Intent.createChooser(intentList.remove(intentList.size() - 1), null);
+            chooserIntent = Intent.createChooser(intentList.remove(intentList.size() - 1), "Choose a file");
             chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, intentList.toArray(new Parcelable[]{}));
         }
 
