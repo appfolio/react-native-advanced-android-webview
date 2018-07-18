@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Parcelable;
 import android.provider.MediaStore;
 import android.util.Log;
@@ -32,32 +31,34 @@ public class AndroidWebViewManager extends ReactWebViewManager {
 
     private static final int PICK_IMAGE = 1;
 
-    private static Uri getTemporaryPhotoFile(Context context) {
-        Date today = Calendar.getInstance().getTime();
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US);
-        String timeStamp = dateFormat.format(today);
+    private Uri temporaryImageOutputUri = null;
 
-        File photoFile = new File(context.getExternalCacheDir(), "IMG_" + timeStamp + ".jpg");
-        photoFile.getParentFile().mkdirs();
+    private Uri createTemporaryImageFile(final Context context) {
+        final Date today = Calendar.getInstance().getTime();
+        final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US);
+        final String timeStamp = dateFormat.format(today);
 
-        Uri photoOutputUri;
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
-            photoOutputUri = Uri.fromFile(photoFile);
-        } else {
-            photoOutputUri = WebViewFileProvider.getUriForFile(context, photoFile);
+        final File imagePath = new File(context.getCacheDir(), "webview_image_uploads");
+        if (!imagePath.exists() && !imagePath.mkdirs()) {
+            return null;
         }
 
-        return photoOutputUri;
+        final File imageFile = new File(imagePath, "IMG_" + timeStamp + ".jpg");
+
+        return WebViewFileProvider.getUriForFile(context, imageFile);
     }
 
-    private static Intent createChooserIntent(Context context, boolean allowMultiple) {
+    private Intent createChooserIntent(final Context context, final boolean allowMultiple) {
         // HACK: hardcoded to images
         List<Intent> intentList = new ArrayList<>();
 
-        Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        takePhotoIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, getTemporaryPhotoFile(context));
-        intentList = addIntentsToList(context, intentList, takePhotoIntent);
+        temporaryImageOutputUri = createTemporaryImageFile(context);
+        if (temporaryImageOutputUri != null) {
+            Intent takePhotoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+            takePhotoIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+            takePhotoIntent.putExtra(MediaStore.EXTRA_OUTPUT, temporaryImageOutputUri);
+            intentList = addIntentsToList(context, intentList, takePhotoIntent);
+        }
 
         Intent pickIntent = new Intent(Intent.ACTION_GET_CONTENT);
         pickIntent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -126,7 +127,7 @@ public class AndroidWebViewManager extends ReactWebViewManager {
                                 Uri[] results;
                                 if (data == null || data.getDataString() == null && data.getClipData() == null) {
                                     // image from camera
-                                    results = new Uri[]{ getTemporaryPhotoFile(activity) };
+                                    results = new Uri[]{ temporaryImageOutputUri };
                                 } else {
                                     String dataString = data.getDataString();
                                     ClipData clipData = data.getClipData();
