@@ -1,6 +1,6 @@
 {
   "name": "react-native-advanced-android-webview",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "main": "index.js",
   "description": "ReactNative's WebView on Android does not support file input. This library adds in an `<AndroidWebView>` that does support file input.",
   "repository": {
