@@ -1,17 +1,23 @@
 package com.appfolio.react.webview;
 
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Parcelable;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.webkit.CookieManager;
+import android.webkit.DownloadListener;
+import android.webkit.URLUtil;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
+import android.widget.Toast;
 
 import com.facebook.react.bridge.BaseActivityEventListener;
 import com.facebook.react.bridge.ReactContext;
@@ -169,6 +175,27 @@ public class AndroidWebViewManager extends ReactWebViewManager {
                 }
 
                 return true;
+            }
+        });
+
+        view.setDownloadListener(new DownloadListener() {
+            @Override
+            public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+                Context context = reactContext.getCurrentActivity().getApplicationContext();
+                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+
+                request.setMimeType(mimeType);
+                String cookies = CookieManager.getInstance().getCookie(url);
+                request.addRequestHeader("cookie", cookies);
+                request.addRequestHeader("User-Agent", userAgent);
+                request.setDescription("Downloading file...");
+                request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimeType));
+                request.allowScanningByMediaScanner();
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType));
+                DownloadManager dm = (DownloadManager) context.getSystemService(context.DOWNLOAD_SERVICE);
+                dm.enqueue(request);
+                Toast.makeText(context, "Downloading File", Toast.LENGTH_LONG).show();
             }
         });
 
